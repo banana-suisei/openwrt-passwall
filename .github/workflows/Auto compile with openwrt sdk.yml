@@ -163,7 +163,7 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-passwall=m" >> .config
           make defconfig
           echo "make package/luci-app-passwall/{clean,compile} -j$(nproc)"
-          make package/luci-app-passwall/{clean,compile} -j$(nproc) V=z
+          make package/luci-app-passwall/{clean,compile} -j$(nproc) V=s
           mv bin/packages/x86_64/passwall/ ../
           make clean
           rm .config .config.old
@@ -193,12 +193,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # x86 (32-bit)
-          - platform: x86
-            url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/x86/generic/openwrt-sdk-24.10.1-x86-generic_gcc-13.3.0_musl.Linux-x86_64.tar.zst
-            sdk_ver: "24.10"
-
-          # x86-64
           - platform: x86_64
             url_sdk: https://downloads.openwrt.org/releases/24.10.1/targets/x86/64/openwrt-sdk-24.10.1-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
             sdk_ver: "24.10"
@@ -252,11 +246,13 @@ jobs:
           src-git telephony https://github.com/openwrt/telephony.git;openwrt-${{ matrix.sdk_ver }}
           EOF
 
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
           #--------------------------------------begin_patches------------------------------------------
           echo "Start applying the patch"
+
 
           rm -rf temp_resp
           git clone -b master --single-branch https://github.com/openwrt/packages.git temp_resp
@@ -274,6 +270,7 @@ jobs:
           echo "fixed rust host build error"
           sed -i 's/--set=llvm\.download-ci-llvm=false/--set=llvm.download-ci-llvm=true/' feeds/packages/lang/rust/Makefile
           grep -q -- '--ci false \\' feeds/packages/lang/rust/Makefile || sed -i '/x\.py \\/a \        --ci false \\' feeds/packages/lang/rust/Makefile
+
 
           echo "Patch application completed"
           #--------------------------------------end_patches--------------------------------------------
@@ -308,6 +305,7 @@ jobs:
 
           make defconfig
 
+
       - name: ${{ matrix.platform }} download
         run: |
           cd sdk
@@ -336,7 +334,9 @@ jobs:
         run: |
           cd sdk
           mkdir upload
+
           zip -jr upload/passwall_packages_ipk_${{ matrix.platform }}.zip bin/packages/*/passwall_packages/*.ipk
+
           echo "FIRMWARE=$PWD" >> $GITHUB_ENV
           echo "status=success" >> $GITHUB_OUTPUT
 
